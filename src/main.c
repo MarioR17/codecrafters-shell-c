@@ -2,17 +2,22 @@
 #include <stdlib.h>
 #include <string.h>
 #include <unistd.h>
+#include <assert.h>
 
 #define MAX_BUFF_SIZE 128
 #define MAX_COMMANDS 64
 #define SHELL_EXIT 0
 #define SHELL_CONTINUE 1
+#define TRUE 1
+#define FALSE 0
 
 unsigned char process_command(char *buffer);
 unsigned char cmd_exit(char *args);
 unsigned char cmd_echo(char *args);
 unsigned char cmd_type(char *args);
 void type_single_cmd(char *command);
+unsigned char is_builtin_cmd(char *command);
+unsigned char builtin_name_to_idx(char *command);
 
 struct builtin {
         char *name;
@@ -58,10 +63,8 @@ unsigned char process_command(char *buffer)
 
         char *args = strtok(NULL, "");
 
-        for (int i = 0; builtins[i].name; i++) {
-                if (strcmp(command, builtins[i].name) == 0) {
-                        return builtins[i].func(args);
-                }
+        if (is_builtin_cmd(command)) {
+                return builtins[builtin_name_to_idx(command)].func(args);
         }
 
         printf("%s: command not found\n", command);
@@ -102,16 +105,9 @@ unsigned char cmd_type(char *args)
 
 void type_single_cmd(char *command)
 {
-        int found = 0;
-
-        for (int i = 0; builtins[i].name; i++) {
-                if (strcmp(command, builtins[i].name) == 0) {
-                        printf("%s is a shell builtin\n",
-                               command);
-                        found = 1;
-                        break;
-                }
-        }
+        int found = is_builtin_cmd(command);
+        if (found)
+                printf("%s is a shell builtin\n", command);
 
         if (!found) {
                 char *path = strdup(getenv("PATH"));
@@ -140,4 +136,31 @@ void type_single_cmd(char *command)
 
         if (!found)
                 printf("%s: not found\n", command);
+}
+
+unsigned char is_builtin_cmd(char *command)
+{
+        for (int i = 0; builtins[i].name; i++) {
+                if (strcmp(command, builtins[i].name) == 0) {
+                        return 1;
+                }
+        }
+
+        return 0;
+}
+
+unsigned char builtin_name_to_idx(char *command)
+{
+        assert(is_builtin_cmd(command));
+
+        unsigned char count = 0;
+
+        while (TRUE) {
+                if (strcmp(builtins[count].name, command) == 0) {
+                        break;
+                }
+                count++;
+        }
+
+        return count;
 }
