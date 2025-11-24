@@ -18,6 +18,10 @@ int main(int argc, char *argv[])
 
                 buffer[strlen(buffer) - 1] = '\0';
 
+                if (strcmp(buffer, "exit") == 0) {
+                        break;
+                }
+
                 printf("%s: command not found\n", buffer);
         }
 
