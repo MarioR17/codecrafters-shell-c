@@ -18,11 +18,16 @@ int main(int argc, char *argv[])
 
                 buffer[strlen(buffer) - 1] = '\0';
 
-                if (strcmp(buffer, "exit") == 0) {
+                char *command = strtok(buffer, " ");
+
+                if (strcmp(command, "echo") == 0) {
+                        printf("%s\n", (buffer + strlen(command) + 1));
+                } else if (strcmp(command, "exit") == 0) {
                         break;
+                } else {
+                        printf("%s: command not found\n", buffer);
                 }
 
-                printf("%s: command not found\n", buffer);
         }
 
         return 0;
