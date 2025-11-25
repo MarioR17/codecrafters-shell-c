@@ -10,6 +10,8 @@
 #define SHELL_CONTINUE 1
 #define TRUE 1
 #define FALSE 0
+#define FOUND 1
+#define NOT_FOUND 0
 
 unsigned char process_command(char *buffer);
 unsigned char cmd_exit(char *args);
@@ -18,6 +20,7 @@ unsigned char cmd_type(char *args);
 void type_single_cmd(char *command);
 unsigned char is_builtin_cmd(char *command);
 unsigned char builtin_name_to_idx(char *command);
+unsigned char get_exec_command_path(char *buffer, int buff_size, char *command);
 
 // builtin commands
 struct builtin {
@@ -44,7 +47,7 @@ int main(int argc, char *argv[])
                 printf("$ ");
 
                 if (!fgets(buffer, sizeof(buffer), stdin))
-                        return 1;
+                        return EXIT_SUCCESS;
                 // get rid of newline characters in the input buffer
                 buffer[strcspn(buffer, "\n")] = '\0';
 
@@ -54,7 +57,7 @@ int main(int argc, char *argv[])
                         break;
         }
 
-        return 0;
+        return EXIT_SUCCESS;
 }
 
 /*
@@ -134,32 +137,13 @@ void type_single_cmd(char *command)
 
         // executable from path
         if (!found) {
-                // allocate string to be the value of path
-                char *path = strdup(getenv("PATH"));
+                char full_path[MAX_BUFF_SIZE]; 
 
-                if (path) {
-                        // iterate through each variable in path
-                        char *dir = strtok(path, ":");
+                found = get_exec_command_path(full_path, MAX_BUFF_SIZE,
+                                              command);
 
-                        while (dir) {
-                                char full_path[MAX_BUFF_SIZE];
-                                // set string to "dir/command" format
-                                snprintf(full_path, sizeof(full_path),
-                                         "%s/%s", dir,
-                                         command);
-
-                                // check if it has execution access
-                                if (access(full_path, X_OK) == 0) {
-                                        printf("%s is %s\n",
-                                               command,
-                                               full_path);
-                                        found = 1;
-                                        break;
-                                }
-                                dir = strtok(NULL, ":");
-                        }
-                }
-                free(path);
+                if (found)
+                        printf("%s is %s\n", command, full_path);
         }
 
         // not builtin or executable command from path
@@ -174,11 +158,11 @@ unsigned char is_builtin_cmd(char *command)
 {
         for (int i = 0; builtins[i].name; i++) {
                 if (strcmp(command, builtins[i].name) == 0) {
-                        return 1;
+                        return FOUND;
                 }
         }
 
-        return 0;
+        return NOT_FOUND;
 }
 
 /*
@@ -198,4 +182,44 @@ unsigned char builtin_name_to_idx(char *command)
         }
 
         return count;
+}
+
+/*
+ * set the buffer to the path of the executable command if found
+*/
+unsigned char get_exec_command_path(char *buffer, int buff_size, char *command)
+{
+        // ensure the given command is not a builtin command
+        assert(!is_builtin_cmd(command));
+        
+        // allocate string to be the value of path
+        char *path = strdup(getenv("PATH"));
+
+        if (path) {
+                // iterate through each variable in path
+                char *dir = strtok(path, ":");
+
+                while (dir) {
+                        // set string to "dir/command" format
+                        int size_allocated = snprintf(buffer, buff_size,
+                                                      "%s/%s", dir,
+                                                      command);
+
+                        // if could not allocate properly
+                        if (size_allocated < 0 || size_allocated >= buff_size)
+                                goto out_free_err;
+
+                        // check if it has execution access
+                        if (access(buffer, X_OK) == 0) {
+                                free(path);
+                                return FOUND;
+                        }
+
+                        dir = strtok(NULL, ":");
+                }
+        }
+
+out_free_err:
+        free(path);
+        return NOT_FOUND;
 }
