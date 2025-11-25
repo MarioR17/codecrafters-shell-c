@@ -1,6 +1,7 @@
 # Part I am on: Run a program
 
 ## Needs to be Done:
+- [] Restructure to having main.c just be main, shell.c be implementations of functions and stuff and shell.h being declarations / structs
 - [] If not a builtin command, "1. Search for an executable with the given name in the directories listed in PATH (just like type does)"
 - [] If executable found, "2. If found, execute the program"
 - [] "3. Pass any arguments from the command line to the program"
