@@ -24,5 +24,6 @@ void type_single_cmd(char *command);
 unsigned char is_builtin_cmd(char *command);
 unsigned char builtin_name_to_idx(char *command);
 unsigned char get_exec_command_path(char *buffer, int buff_size, char *command);
+int get_args_list(char *buffer[], int buff_size, char *args);
 
 #endif // SHELL_H
